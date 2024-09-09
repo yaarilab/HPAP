@@ -17,7 +17,7 @@ Channel
 	g_9_reads_g_15 = Channel.empty()
  }
 
-Channel.value(params.mate2).into{g_10_mate_g_6;g_10_mate_g_7;g_10_mate_g_5;g_10_mate_g_4}
+Channel.value(params.mate2).into{g_10_mate_g_6;g_10_mate_g_7;g_10_mate_g_5;g_10_mate_g_4;g_10_mate_g_3}
 
 
 process unizp {
@@ -356,6 +356,7 @@ process filter_seq_quality {
 
 input:
  set val(name),file(reads) from g_2_reads0_g_3
+ val mate from g_10_mate_g_3
 
 output:
  set val(name), file("*_${method}-pass.fast*")  into g_3_reads0_g_4
