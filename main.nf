@@ -3,28 +3,81 @@ params.outdir = 'results'
 
 evaluate(new File("${params.projectDir}/nextflow_header.config"))
 params.metadata.metadata = "${params.projectDir}/tools.json"
-if (!params.mate_pair){params.mate_pair = ""} 
+if (!params.mate){params.mate = ""} 
 if (!params.reads){params.reads = ""} 
-if (!params.mate_single){params.mate_single = ""} 
+if (!params.mate2){params.mate2 = ""} 
 
-Channel.value(params.mate_pair).into{g_8_mate_g_0;g_8_mate_g_1;g_8_mate_g_2}
+Channel.value(params.mate).into{g_8_mate_g_0;g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15}
 if (params.reads){
 Channel
 	.fromFilePairs( params.reads , size: params.mate == "single" ? 1 : params.mate == "pair" ? 2 : params.mate == "triple" ? 3 : params.mate == "quadruple" ? 4 : -1 )
 	.ifEmpty { error "Cannot find any reads matching: ${params.reads}" }
-	.set{g_9_reads_g_0}
+	.set{g_9_reads_g_15}
  } else {  
-	g_9_reads_g_0 = Channel.empty()
+	g_9_reads_g_15 = Channel.empty()
  }
 
-Channel.value(params.mate_single).into{g_10_mate_g_6;g_10_mate_g_7;g_10_mate_g_5;g_10_mate_g_4}
+Channel.value(params.mate2).into{g_10_mate_g_6;g_10_mate_g_7;g_10_mate_g_5;g_10_mate_g_4}
+
+
+process unizp {
+
+input:
+ set val(name),file(reads) from g_9_reads_g_15
+ val mate from g_8_mate_g_15
+
+output:
+ set val(name),file("*.fastq")  into g_15_reads0_g_0
+
+script:
+
+if(mate=="pair"){
+	readArray = reads.toString().split(' ')	
+	R1 = readArray[0]
+	R2 = readArray[1]
+	
+	"""
+	case "$R1" in
+	*.gz | *.tgz ) 
+	        gunzip -c $R1 > R1.fastq
+	        ;;
+	*)
+	        cp $R1 ./R1.fastq
+	        echo "$R1 not gzipped"
+	        ;;
+	esac
+	
+	case "$R2" in
+	*.gz | *.tgz ) 
+	        gunzip -c $R2 > R2.fastq
+	        ;;
+	*)
+	        cp $R2 ./R2.fastq
+	        echo "$R2 not gzipped"
+	        ;;
+	esac
+	"""
+}else{
+	"""
+	case "$reads" in
+	*.gz | *.tgz ) 
+	        gunzip -c $reads > R1.fastq
+	        ;;
+	*)
+	        cp $reads ./R1.fastq
+	        echo "$reads not gzipped"
+	        ;;
+	esac
+	"""
+}
+}
 
 
 process MaskPrimers {
 
 input:
  val mate from g_8_mate_g_0
- set val(name),file(reads) from g_9_reads_g_0
+ set val(name),file(reads) from g_15_reads0_g_0
 
 output:
  set val(name), file("*_primers-pass.fast*")  into g_0_reads0_g_1
