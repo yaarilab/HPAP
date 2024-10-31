@@ -318,10 +318,10 @@ script:
 println reads1
 println reads2
 
-R1 = reads1 ? reads1[0] : null
-R2 = reads1 ? reads1[1] : null
-R1_rev = reads2 ? reads2[1] : null
-R2_rev = reads2 ? reads2[0] : null
+R1 = (reads1 && reads1.size() == 2) ? reads1[0] : null
+R2 = (reads1 && reads1.size() == 2) ? reads1[1] : null
+R1_rev = (reads2 && reads2.size() == 2) ? reads2[1] : null
+R2_rev = (reads2 && reads2.size() == 2) ? reads2[0] : null
 
 println R1
 println R2
