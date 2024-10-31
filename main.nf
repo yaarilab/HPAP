@@ -7,7 +7,7 @@ if (!params.mate){params.mate = ""}
 if (!params.reads){params.reads = ""} 
 if (!params.mate2){params.mate2 = ""} 
 
-Channel.value(params.mate).into{g_8_mate_g_0;g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15;g_8_mate_g_16}
+Channel.value(params.mate).into{g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15;g_8_mate_g_0;g_8_mate_g_16}
 if (params.reads){
 Channel
 	.fromFilePairs( params.reads , size: params.mate == "single" ? 1 : params.mate == "pair" ? 2 : params.mate == "triple" ? 3 : params.mate == "quadruple" ? 4 : -1 )
@@ -80,7 +80,7 @@ input:
  set val(name),file(reads) from g_15_reads0_g_0
 
 output:
- set val(name), file("*_primers-pass.fast*")  into g_0_reads0_g_17
+ set val(name), file("*_primers-pass.fast*") optional true  into g_0_reads0_g_17
  set val(name), file("*_primers-fail.fast*") optional true  into g_0_reads_failed1_g_16
  set val(name), file("MP_*")  into g_0_logFile22
  set val(name),file("out*")  into g_0_logFile33
@@ -195,7 +195,7 @@ input:
  set val(name),file(reads) from g_0_reads_failed1_g_16
 
 output:
- set val(name), file("*_primers-pass.fast*")  into g_16_reads0_g_17
+ set val(name), file("*_primers-pass.fast*") optional true  into g_16_reads0_g_17
  set val(name), file("*_primers-fail.fast*") optional true  into g_16_reads_failed11
  set val(name), file("MP_*")  into g_16_logFile22
  set val(name),file("out*")  into g_16_logFile33
