@@ -7,7 +7,7 @@ if (!params.mate){params.mate = ""}
 if (!params.reads){params.reads = ""} 
 if (!params.mate2){params.mate2 = ""} 
 
-Channel.value(params.mate).into{g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15;g_8_mate_g_0;g_8_mate_g_16}
+Channel.value(params.mate).into{g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15;g_8_mate_g_0;g_8_mate_g_16;g_8_mate_g_17}
 if (params.reads){
 Channel
 	.fromFilePairs( params.reads , size: params.mate == "single" ? 1 : params.mate == "pair" ? 2 : params.mate == "triple" ? 3 : params.mate == "quadruple" ? 4 : -1 )
@@ -308,6 +308,7 @@ process combined_mask_primer {
 input:
  set val(name),file(reads1) from g_0_reads0_g_17
  set val(name),file(reads2) from g_16_reads0_g_17
+ val mate from g_8_mate_g_17
 
 output:
  set val(name),file("*_output.fastq")  into g_17_reads0_g_1
