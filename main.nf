@@ -312,42 +312,59 @@ input:
 output:
  set val(name),file("*_output.fastq")  into g_17_reads0_g_1
 
-
 script:
-	
-R1 = reads1[0]	
-R2 = reads1[1]
+    // Assign variables, defaulting to null if files are missing
+    R1 = reads1 ? reads1[0] : null
+    R2 = reads1 ? reads1[1] : null
+    R1_rev = reads2 ? reads2[1] : null
+    R2_rev = reads2 ? reads2[0] : null
 
-R1_rev = reads2[1]
-R2_rev = reads2[0]
-
-R1_size = R1.size()
-R1_rev_size = R1_rev.size()
-	
-if (R1_size > R1_rev_size) {
-    // Return R1 and R2
-    """
-    cp ${R1} R1_output.fastq
-    cp ${R2} R2_output.fastq
-    """
-} else if (R1_rev_size > R1_size) {
-    // Return R1_rev and R2_rev
-    """
-    cp ${R1_rev} R1_output.fastq
-    cp ${R2_rev} R2_output.fastq
-    """
-} else {
-    // Sizes are relatively equal; concatenate and remove duplicates
-    """
-    # Concatenate files
-    cat ${R1} ${R1_rev} > R1_concat.fastq
-    cat ${R2} ${R2_rev} > R2_concat.fastq
-
-    # Remove duplicate sequences by sequence ID
-    awk 'NR % 4 == 1 {seen[\$1]++; if(seen[\$1] == 1) keep=1; else keep=0} {if(keep) print}' R1_concat.fastq > R1_output.fastq
-    awk 'NR % 4 == 1 {seen[\$1]++; if(seen[\$1] == 1) keep=1; else keep=0} {if(keep) print}' R2_concat.fastq > R2_output.fastq
-    """
-}
+    // Determine which files to return based on availability
+    if (R1 && !R1_rev) {
+        // R1 is available but R1_rev is missing, return R1 and R2
+        """
+        cp ${R1} R1_output.fastq
+        cp ${R2} R2_output.fastq
+        """
+    } else if (R1_rev && !R1) {
+        // R1_rev is available but R1 is missing, return R1_rev and R2_rev
+        """
+        cp ${R1_rev} R1_output.fastq
+        cp ${R2_rev} R2_output.fastq
+        """
+    } else if (R1 && R1_rev) {
+        // Both R1 and R1_rev are available, compare sizes
+        R1_size = R1.size()
+        R1_rev_size = R1_rev.size()
+        
+        if (R1_size > R1_rev_size) {
+            // Return R1 and R2
+            """
+            cp ${R1} R1_output.fastq
+            cp ${R2} R2_output.fastq
+            """
+        } else if (R1_rev_size > R1_size) {
+            // Return R1_rev and R2_rev
+            """
+            cp ${R1_rev} R1_output.fastq
+            cp ${R2_rev} R2_output.fastq
+            """
+        } else {
+            // Sizes are relatively equal; concatenate and remove duplicates
+            """
+            # Concatenate files
+            cat ${R1} ${R1_rev} > R1_concat.fastq
+            cat ${R2} ${R2_rev} > R2_concat.fastq
+        
+            # Remove duplicate sequences by sequence ID
+            awk 'NR % 4 == 1 {seen[\$1]++; if(seen[\$1] == 1) keep=1; else keep=0} {if(keep) print}' R1_concat.fastq > R1_output.fastq
+            awk 'NR % 4 == 1 {seen[\$1]++; if(seen[\$1] == 1) keep=1; else keep=0} {if(keep) print}' R2_concat.fastq > R2_output.fastq
+            """
+        }
+    } else {
+        // Neither R1 nor R1_rev is available, throw an error
+        error "Both R1 and R1_rev are missing. Cannot proceed with processing."
+    }
 }
 
 
