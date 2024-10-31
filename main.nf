@@ -310,7 +310,7 @@ input:
  set val(name),file(reads2) from g_16_reads0_g_17
 
 output:
- set val(name),file("*_concat.fastq")  into g_17_reads0_g_1
+ set val(name),file("*_output.fastq")  into g_17_reads0_g_1
 
 
 script:
@@ -320,11 +320,34 @@ R2 = reads1[1]
 
 R1_rev = reads2[1]
 R2_rev = reads2[0]
+
+R1_size = R1.size()
+R1_rev_size = R1_rev.size()
 	
-"""
-cat ${R1} ${R1_rev} > R1_concat.fastq
-cat ${R2} ${R2_rev} > R2_concat.fastq
-"""
+if (R1_size > R1_rev_size) {
+    // Return R1 and R2
+    """
+    cp ${R1} R1_output.fastq
+    cp ${R2} R2_output.fastq
+    """
+} else if (R1_rev_size > R1_size) {
+    // Return R1_rev and R2_rev
+    """
+    cp ${R1_rev} R1_output.fastq
+    cp ${R2_rev} R2_output.fastq
+    """
+} else {
+    // Sizes are relatively equal; concatenate and remove duplicates
+    """
+    # Concatenate files
+    cat ${R1} ${R1_rev} > R1_concat.fastq
+    cat ${R2} ${R2_rev} > R2_concat.fastq
+
+    # Remove duplicate sequences by sequence ID
+    awk 'NR % 4 == 1 {seen[\$1]++; if(seen[\$1] == 1) keep=1; else keep=0} {if(keep) print}' R1_concat.fastq > R1_output.fastq
+    awk 'NR % 4 == 1 {seen[\$1]++; if(seen[\$1] == 1) keep=1; else keep=0} {if(keep) print}' R2_concat.fastq > R2_output.fastq
+    """
+}
 }
 
 
