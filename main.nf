@@ -315,6 +315,9 @@ output:
 
 script:
 // Assign variables, defaulting to null if files are missing
+println reads1
+println reads2
+
 R1 = reads1 ? reads1[0] : null
 R2 = reads1 ? reads1[1] : null
 R1_rev = reads2 ? reads2[1] : null
