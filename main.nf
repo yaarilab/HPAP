@@ -7,7 +7,7 @@ if (!params.mate){params.mate = ""}
 if (!params.reads){params.reads = ""} 
 if (!params.mate2){params.mate2 = ""} 
 
-Channel.value(params.mate).into{g_8_mate_g_0;g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15}
+Channel.value(params.mate).into{g_8_mate_g_0;g_8_mate_g_1;g_8_mate_g_2;g_8_mate_g_15;g_8_mate_g_16}
 if (params.reads){
 Channel
 	.fromFilePairs( params.reads , size: params.mate == "single" ? 1 : params.mate == "pair" ? 2 : params.mate == "triple" ? 3 : params.mate == "quadruple" ? 4 : -1 )
@@ -80,8 +80,8 @@ input:
  set val(name),file(reads) from g_15_reads0_g_0
 
 output:
- set val(name), file("*_primers-pass.fast*")  into g_0_reads0_g_1
- set val(name), file("*_primers-fail.fast*") optional true  into g_0_reads_failed11
+ set val(name), file("*_primers-pass.fast*")  into g_0_reads0_g_17
+ set val(name), file("*_primers-fail.fast*") optional true  into g_0_reads_failed1_g_16
  set val(name), file("MP_*")  into g_0_logFile22
  set val(name),file("out*")  into g_0_logFile33
 
@@ -188,10 +188,150 @@ if(mate=="pair"){
 }
 
 
+process MaskPrimers_reverse {
+
+input:
+ val mate from g_8_mate_g_16
+ set val(name),file(reads) from g_0_reads_failed1_g_16
+
+output:
+ set val(name), file("*_primers-pass.fast*")  into g_16_reads0_g_17
+ set val(name), file("*_primers-fail.fast*") optional true  into g_16_reads_failed11
+ set val(name), file("MP_*")  into g_16_logFile22
+ set val(name),file("out*")  into g_16_logFile33
+
+script:
+method = params.MaskPrimers_reverse.method
+barcode_field = params.MaskPrimers_reverse.barcode_field
+primer_field = params.MaskPrimers_reverse.primer_field
+barcode = params.MaskPrimers_reverse.barcode
+revpr = params.MaskPrimers_reverse.revpr
+mode = params.MaskPrimers_reverse.mode
+failed = params.MaskPrimers_reverse.failed
+fasta = params.MaskPrimers_reverse.fasta
+nproc = params.MaskPrimers_reverse.nproc
+maxerror = params.MaskPrimers_reverse.maxerror
+umi_length = params.MaskPrimers_reverse.umi_length
+start = params.MaskPrimers_reverse.start
+extract_length = params.MaskPrimers_reverse.extract_length
+maxlen = params.MaskPrimers_reverse.maxlen
+skiprc = params.MaskPrimers_reverse.skiprc
+R1_primers = params.MaskPrimers_reverse.R1_primers
+R2_primers = params.MaskPrimers_reverse.R2_primers
+//* @style @condition:{method="score",umi_length,start,maxerror}{method="extract",umi_length,start},{method="align",maxerror,maxlen,skiprc}, {method="extract",start,extract_length} @array:{method,barcode_field,primer_field,barcode,revpr,mode,maxerror,umi_length,start,extract_length,maxlen,skiprc} @multicolumn:{method,barcode_field,primer_field,barcode,revpr,mode,failed,nproc,maxerror,umi_length,start,extract_length,maxlen,skiprc}
+
+method = (method.collect().size==2) ? method : [method[0],method[0]]
+barcode_field = (barcode_field.collect().size==2) ? barcode_field : [barcode_field[0],barcode_field[0]]
+primer_field = (primer_field.collect().size==2) ? primer_field : [primer_field[0],primer_field[0]]
+barcode = (barcode.collect().size==2) ? barcode : [barcode[0],barcode[0]]
+revpr = (revpr.collect().size==2) ? revpr : [revpr[0],revpr[0]]
+mode = (mode.collect().size==2) ? mode : [mode[0],mode[0]]
+maxerror = (maxerror.collect().size==2) ? maxerror : [maxerror[0],maxerror[0]]
+umi_length = (umi_length.collect().size==2) ? umi_length : [umi_length[0],umi_length[0]]
+start = (start.collect().size==2) ? start : [start[0],start[0]]
+extract_length = (extract_length.collect().size==2) ? extract_length : [extract_length[0],extract_length[0]]
+maxlen = (maxlen.collect().size==2) ? maxlen : [maxlen[0],maxlen[0]]
+skiprc = (skiprc.collect().size==2) ? skiprc : [skiprc[0],skiprc[0]]
+failed = (failed=="true") ? "--failed" : ""
+fasta = (fasta=="true") ? "--fasta" : ""
+def args_values = [];
+[method,barcode_field,primer_field,barcode,revpr,mode,maxerror,umi_length,start,extract_length,maxlen,skiprc].transpose().each { m,bf,pf,bc,rp,md,mr,ul,s,el,ml,sk -> {
+    
+    if(m=="align"){
+        s = ""
+    }else{
+        if(bc=="false"){
+            s = "--start ${s}"
+        }else{
+            s = s + ul
+            s = "--start ${s}"
+        }
+    }
+    
+    el = (m=="extract") ? "--len ${el}" : ""
+    mr = (m=="extract") ? "" : "--maxerror ${mr}" 
+    ml = (m=="align") ? "--maxlen ${ml}" : "" 
+    sk = (m=="align" && sk=="true") ? "--skiprc" : "" 
+    
+    PRIMER_FIELD = "${pf}"
+    
+    // all
+    bf = (bf=="") ? "" : "--bf ${bf}"
+    pf = (pf=="") ? "" : "--pf ${pf}"
+    bc = (bc=="false") ? "" : "--barcode"
+    rp = (rp=="false") ? "" : "--revpr"
+    args_values.add("${m} --mode ${md} ${bc} ${rp} ${mr} ${s} ${el} ${ml} ${sk} ${pf} ${bf}")
+    
+    
+}}
+
+readArray = reads.toString().split(' ')
+if(mate=="pair"){
+	args_1 = args_values[0]
+	args_2 = args_values[1]
+	
+  
+
+
+	R1 = readArray[0]
+	R2 = readArray[1]
+	
+	R1_primers = (method[0]=="extract") ? "" : "-p ${R1_primers}"
+	R2_primers = (method[1]=="extract") ? "" : "-p ${R2_primers}"
+	
+	
+	"""
+	
+	MaskPrimers.py ${args_1} -s ${R1} ${R1_primers} --log MP_R1_${name}.log  --nproc ${nproc} ${failed} ${fasta} 2>&1 | tee -a out_${R1}_MP.log & \
+	MaskPrimers.py ${args_2} -s ${R2} ${R2_primers} --log MP_R2_${name}.log  --nproc ${nproc} ${failed} ${fasta} 2>&1 | tee -a out_${R1}_MP.log & \
+	wait
+	"""
+}else{
+	args_1 = args_values[0]
+	
+	R1_primers = (method[0]=="extract") ? "" : "-p ${R1_primers}"
+	
+	R1 = readArray[0]
+
+	"""
+	echo -e "Assuming inputs for R1\n"
+	
+	MaskPrimers.py ${args_1} -s ${reads} ${R1_primers} --log MP_${name}.log  --nproc ${nproc} ${failed} ${fasta} 2>&1 | tee -a out_${R1}_MP.log
+	"""
+}
+
+}
+
+
+process combined_mask_primer {
+
+input:
+ set val(name),file(reads1) from g_0_reads0_g_17
+ set val(name),file(reads2) from g_16_reads0_g_17
+
+output:
+ set val(name),file("*_concat.fastq")  into g_17_reads0_g_1
+
+
+script:
+	
+R1 = reads1[0]	
+R2 = reads1[1]
+
+R1_rev = reads2[1]
+R2_rev = reads2[0]
+	
+"""
+cat ${R1} ${R1_rev} > R1_concat.fastq
+cat ${R2} ${R2_rev} > R2_concat.fastq
+"""
+}
+
+
 process pair_seq {
 
 input:
- set val(name),file(reads) from g_0_reads0_g_1
+ set val(name),file(reads) from g_17_reads0_g_1
  val mate from g_8_mate_g_1
 
 output:
