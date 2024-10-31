@@ -319,6 +319,11 @@ R2 = reads1 ? reads1[1] : null
 R1_rev = reads2 ? reads2[1] : null
 R2_rev = reads2 ? reads2[0] : null
 
+println R1
+println R2
+println R1_rev
+println R2_rev
+
 // Determine which files to return based on availability
 if (R1 && !R1_rev) {
     // R1 is available but R1_rev is missing, return R1 and R2
